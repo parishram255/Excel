@@ -1,0 +1,215 @@
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <title>Inward / Outward Registration</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #f3f4f6;
+      padding: 40px;
+      color: #1e1e1e;
+    }
+    input, textarea { text-transform: uppercase; }
+    h2 {
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 30px;
+      color: #0096d6;
+    }
+    .card {
+      border-radius: 16px;
+      background: #ffffff;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+      padding: 25px;
+      margin-bottom: 20px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 35px rgba(0,0,0,0.12);
+    }
+    .form-control {
+      border-radius: 12px;
+      border: 1px solid #d1d5db;
+      padding: 12px;
+      font-size: 15px;
+    }
+    .btn {
+      border-radius: 12px !important;
+      padding: 10px 16px;
+      font-weight: 500;
+    }
+    .btn-primary { background-color: #0072c6; border: none; }
+    .btn-success { background-color: #0096d6; border: none; }
+    .btn-info { background-color: #00aaff; border: none; }
+    .btn-custom { background-color: #005a9e; border: none; color: white; }
+    .btn:hover { opacity: 0.9; }
+    .outward-card {
+      background: #f9fafc;
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      margin-bottom: 15px;
+    }
+    .record-card {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      margin-bottom: 20px;
+    }
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+    .toast {
+      background: #0096d6;
+      color: #fff;
+      border-radius: 10px;
+      padding: 12px 18px;
+      margin-top: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      animation: fadeInUp 0.4s ease;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📒 Inward / Outward Registration</h2>
+    <div class="row g-4">
+      <!-- Left Column: Inward -->
+      <div class="col-lg-6">
+        <div class="card">
+          <h4>➕ New Inward Entry</h4>
+          <form id="inwardForm">
+            <input type="text" name="name" placeholder="Customer Name" class="form-control mb-3" required="">
+            <input type="text" name="mobile" placeholder="Mobile Number" class="form-control mb-3" required="">
+            <select id="particularSelect" name="particular" class="form-control mb-3" required="">
+              <option value="">Select Particular</option>
+              <option>Laptop</option>
+              <option>Desktop</option>
+              <option>UPS</option>
+              <option>Other</option>
+            </select>
+            <input type="text" id="otherParticular" name="otherParticular" class="form-control mb-3" placeholder="Enter Other Particular" style="display:none;">
+            <input type="text" name="problem" placeholder="Problem Description" class="form-control mb-3" required="">
+            <button class="btn btn-success w-100">Register Inward</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Right Column: Outward + Search -->
+      <div class="col-lg-6">
+        <div class="card mb-4">
+          <h4>📤 Outward Entry</h4>
+          <form id="outwardSearchForm">
+            <input type="text" id="mobileOut" placeholder="Enter Mobile Number" class="form-control mb-3" required="">
+            <button class="btn btn-primary w-100">Search Inward Records</button>
+          </form>
+          <div id="outwardResults" class="mt-3"></div>
+        </div>
+
+        <div class="card">
+          <h4>🔍 Search Records</h4>
+          <form id="searchForm">
+            <input type="text" id="searchMobile" placeholder="Mobile Number" class="form-control mb-3" required="">
+            <button class="btn btn-info w-100">Search</button>
+          </form>
+          <div id="results" class="mt-3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbyjWsFW0poo9uwrICG7iO2iXtH1fLIU6jK3GokNbuMcgXcEtpUGQY_ZYKML-yKxSZ09/exec";
+
+function formatDate(d) {
+  let date = new Date(d);
+  let options = { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" };
+  return date.toLocaleString("en-GB", options).replace(",", "");
+}
+
+function showToast(msg, type="info") {
+  let toast = document.createElement("div");
+  toast.className = "toast";
+  toast.style.background = type === "success" ? "#0096d6" : type === "error" ? "#e53e3e" : "#0072c6";
+  toast.innerText = msg;
+  document.getElementById("toastContainer").appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+document.getElementById("particularSelect").addEventListener("change", function() {
+  document.getElementById("otherParticular").style.display = this.value === "Other" ? "block" : "none";
+});
+
+document.getElementById("inwardForm").addEventListener("submit", async function(e){
+  e.preventDefault();
+  let formData = new FormData(this);
+  if (formData.get("particular") === "Other") formData.set("particular", document.getElementById("otherParticular").value);
+  formData.append("action", "inward");
+  await fetch(API_URL, { method: "POST", body: formData });
+  showToast("✅ Inward registered successfully!", "success");
+  this.reset();
+});
+
+document.getElementById("outwardSearchForm").addEventListener("submit", async function(e){
+  e.preventDefault();
+  let mobile = document.getElementById("mobileOut").value;
+  let res = await fetch(API_URL);
+  let data = await res.json();
+  let results = data.filter(r => r[2] == mobile && r[5] == "Inward");
+  let html = "";
+  results.forEach(r => {
+    html += `<div class="outward-card">
+      <strong>SRNO:</strong> ${r[0]} | <strong>Name:</strong> ${r[1]}<br>
+      <strong>Particular:</strong> ${r[3]} | <strong>Problem:</strong> ${r[4]}<br>
+      <strong>Inward:</strong> ${formatDate(r[6])}<br>
+      <button class="btn btn-custom mt-2" onclick="markOutward('${r[2]}', ${r[0]})">Mark Outward</button>
+    </div>`;
+  });
+  document.getElementById("outwardResults").innerHTML = results.length ? html : "<p>No active inward records found</p>";
+});
+
+async function markOutward(mobile, srno) {
+  let formData = new FormData();
+  formData.append("action", "outward");
+  formData.append("mobile", mobile);
+  formData.append("srno", srno);
+  let res = await fetch(API_URL, { method: "POST", body: formData });
+  showToast(await res.text(), "success");
+  document.getElementById("outwardResults").innerHTML = "";
+}
+
+document.getElementById("searchForm").addEventListener("submit", async function(e){
+  e.preventDefault();
+  let res = await fetch(API_URL);
+  let data = await res.json();
+  let mobile = document.getElementById("searchMobile").value;
+  let results = data.filter(r => r[2] == mobile);
+  let html = "";
+  results.forEach(r => {
+    html += `<div class="record-card">
+      <h5>${r[3]} <span class="badge bg-secondary">${r[5]}</span></h5>
+      <p><strong>SRNO:</strong> ${r[0]}<br>
+      <strong>Name:</strong> ${r[1]}<br>
+      <strong>Problem:</strong> ${r[4]}<br>
+      <strong>Inward:</strong> ${formatDate(r[6])}<br>
+      <strong>Outward:</strong> ${r[7] ? formatDate(r[7]) : "-"}</p>
+    </div>`;
+  });
+  document.getElementById("results").innerHTML = results.length ? html : "<p>No records found</p>";
+});
+</script>
+
+
+</body></html>
